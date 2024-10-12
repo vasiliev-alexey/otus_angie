@@ -1,0 +1,40 @@
+# Vagrantfile для Ubuntu 24.04
+Vagrant.configure("2") do |config|
+  # Указываем образ Ubuntu 24.04
+  config.vm.box = "alvistack/ubuntu-24.04"
+  config.vm.box_version = "20241002.1.1"
+
+  # Настройка сети, проброс портов (например, для веб-сервера)
+  config.vm.network "forwarded_port", guest: 80, host: 8080  # Проброс порта 80 на 8080
+  config.vm.network "forwarded_port", guest: 443, host: 8443 # Проброс порта 443 на 8443
+
+  # Настройка синхронизации папок (например, папка на хосте /vagrant будет смонтирована в /vagrant в гостевой ОС)
+   config.vm.synced_folder ".", "/vagrant", type: "rsync"
+
+
+#  config.vm.synced_folder "./", "/vagrant"
+#   config.vm.synced_folder '.', '/vagrant', disabled: true
+
+  # Указываем провайдер (например, VirtualBox)
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"  # Устанавливаем объем памяти (в МБ)
+    vb.cpus = 2         # Количество процессоров
+  end
+
+  # Выполняем дополнительные команды на машине после запуска
+
+  config.vm.provision "base", type: "ansible_local" do |ansible|
+    # ansible.compatibility_mode = "2.0"
+     ansible.playbook = "provisioners/base.yml"
+     ansible.become = "true"
+  end
+
+  config.vm.provision "angie", type: "ansible_local" do |ansible|
+    # ansible.compatibility_mode = "2.0"
+     ansible.playbook = "provisioners/angie.yml"
+     ansible.become = "true"
+  end
+
+
+
+end

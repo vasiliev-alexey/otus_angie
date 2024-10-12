@@ -1,0 +1,32 @@
+---
+- name: Установка и компиляция Nginx с Brotli
+  hosts: all
+  become: yes
+  vars:
+    nginx_version: "1.24.0"
+    install_dir: "/usr/local/nginx"
+  tasks:
+    - name: Установка необходимых зависимостей
+      apt:
+        name:
+          - libnginx-mod-http-brotli-filter
+          - libnginx-mod-http-brotli-static
+        state: present
+        update_cache: yes
+    - name: Копирование всех файлов из /vagrant/nginx в /etc/nginx
+      become: yes
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/nginx/"
+        owner: root
+        group: root
+        mode: '0644'
+      with_fileglob:
+        - "/vagrant/nginx/*"
+
+    - name: Перезагрузить конфигурацию Nginx
+      become: yes
+      systemd:
+        name: nginx
+        state: reloaded
+        enabled: yes
