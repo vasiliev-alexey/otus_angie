@@ -1,0 +1,51 @@
+---
+- name: Configure Angie
+  hosts: all
+  become: yes
+
+
+  tasks:
+    - name: Добавить репозиторий Angie
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list.d/angie.list
+        create: yes
+        line: "deb https://download.angie.software/angie/{{ ansible_distribution | lower }}/{{ ansible_distribution_version }} {{ ansible_distribution_release }} main"
+
+    - name: Скачать GPG-ключ Angie
+      ansible.builtin.get_url:
+        url: https://angie.software/keys/angie-signing.gpg
+        dest: /etc/apt/trusted.gpg.d/angie-signing.gpg
+        mode: '0644'
+
+    - name: Обновить кеш APT
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Установить Angie
+      ansible.builtin.apt:
+        name:
+          - angie
+          - angie-console-light
+          - angie-module-headers-more
+        state: present
+
+
+
+    - name: Скопировать новую стартовую страницу
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /usr/share/angie/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Проверить, что файл скопирован правильно
+      ansible.builtin.stat:
+        path: /usr/share/angie/html/index.html
+      register: index_file
+
+    - name: Перезапустить веб-сервер (если необходимо)
+      ansible.builtin.service:
+        name: angie
+        state: restarted
+      when: index_file.stat.exists == True
