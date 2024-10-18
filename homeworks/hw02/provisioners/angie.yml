@@ -1,0 +1,136 @@
+---
+- name: Configure Angie
+  hosts: all
+  become: yes
+
+
+  tasks:
+    - name: Добавить репозиторий Angie
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list.d/angie.list
+        create: yes
+        line: "deb https://download.angie.software/angie/{{ ansible_distribution | lower }}/{{ ansible_distribution_version }} {{ ansible_distribution_release }} main"
+
+    - name: Скачать GPG-ключ Angie
+      ansible.builtin.get_url:
+        url: https://angie.software/keys/angie-signing.gpg
+        dest: /etc/apt/trusted.gpg.d/angie-signing.gpg
+        mode: '0644'
+
+    - name: Обновить кеш APT
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Установить Angie
+      ansible.builtin.apt:
+        name:
+          - angie
+          - angie-console-light
+          - angie-module-brotli
+          - angie-module-headers-more
+        state: present
+
+
+    - name: Synchronize nginx modules to angie directory
+      synchronize:
+        src: /etc/nginx/modules-enabled/
+        dest: /etc/angie/modules-enabled/
+
+
+
+    - name: Копирование файлов из Nginx в Angie с помощью rsync
+      command: rsync -a --no-links /etc/nginx/ /etc/angie/
+
+    - name: Move nginx.conf to angie.conf
+      file:
+        src: /etc/angie/nginx.conf
+        dest: /etc/angie/angie.conf
+        state: hard
+        force: yes
+
+
+    - name: Replace commented include lines for nginx with angie includes
+      lineinfile:
+        path: /etc/angie/angie.conf
+        state: present
+        regexp: '^# include /etc/nginx/(conf.d|default.d|http.d|stream.d|sites-enabled|modules-enabled|mime.types);$'
+        line: 'include /etc/angie/\1;'
+        backrefs: yes
+
+    - name: Replace existing include lines for nginx with angie includes
+      lineinfile:
+        path: /etc/angie/angie.conf
+        state: present
+        regexp: 'include /etc/nginx/(conf.d|default.d|http.d|stream.d|sites-enabled|modules-enabled|mime.types);'
+        line: 'include /etc/angie/\1;'
+        backrefs: yes
+
+
+    - name: Replace include lines for nginx with angie includes
+      lineinfile:
+        path: /etc/angie/angie.conf
+        state: present
+        regexp: 'include /etc/nginx/(conf.d|sites-enabled)/'
+        line: 'include /etc/angie/\1/*;'
+        backrefs: yes
+
+    - name: Replace nginx conf.d include line with angie
+      lineinfile:
+        path: /etc/angie/angie.conf
+        regexp: 'include /etc/nginx/conf.d/\*.conf;$'
+        line: 'include /etc/angie/conf.d/*.conf;'
+
+    - name: Replace nginx modules-enabled include line with angie
+      lineinfile:
+        path: /etc/angie/angie.conf
+        regexp: '^include /etc/nginx/modules-enabled/\*.conf;$'
+        line: 'include /etc/angie/modules-enabled/*.conf;'
+
+    - name: Replace nginx pid line with angie
+      lineinfile:
+        path: /etc/angie/angie.conf
+        regexp: '^pid /run/nginx.pid;$'
+        line: 'pid /run/angie.pid;'
+
+    - name: Replace access_log line with angie path
+      lineinfile:
+        path: /etc/angie/angie.conf
+        regexp: 'access_log /var/log/nginx/access.log;$'
+        line: 'access_log /var/log/angie/access.log;'
+
+    - name: Replace error_log line with angie path
+      lineinfile:
+        path: /etc/angie/angie.conf
+        regexp: 'error_log /var/log/nginx/error.log;$'
+        line: 'error_log /var/log/angie/error.log;'
+
+    - name: Ensure angie sites-enabled directory exists
+      file:
+        path: /etc/angie/sites-enabled/
+        state: directory
+
+    - name: Synchronize nginx sites-available to angie
+      synchronize:
+        src: /etc/nginx/sites-available/
+        dest: /etc/angie/sites-available/
+
+    - name: Create symbolic link from sites-available to sites-enabled
+      file:
+        src: /etc/angie/sites-available/default
+        dest: /etc/angie/sites-enabled/default
+        state: link
+
+    - name: Stop Nginx service
+      systemd:
+        name: nginx
+        state: stopped
+
+    - name: Disable Nginx service
+      systemd:
+        name: nginx
+        enabled: no
+
+    - name: Start Angie service
+      systemd:
+        name: angie
+        state: started
