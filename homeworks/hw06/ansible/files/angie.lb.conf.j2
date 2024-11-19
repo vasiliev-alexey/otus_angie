@@ -1,0 +1,83 @@
+user  angie;
+worker_processes  auto;
+worker_rlimit_nofile 65536;
+
+error_log  /var/log/angie/error.log notice;
+pid        /run/angie.pid;
+
+events {
+    worker_connections  65536;
+}
+
+http {
+    include       /etc/angie/mime.types;
+    default_type  application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                     '$status $body_bytes_sent "$http_referer" '
+                     '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/angie/access.log main;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+
+    resolver 127.0.0.53 ipv6=off;
+    acme_client rsa    https://acme-v02.api.letsencrypt.org/directory key_type=rsa;
+    acme_client ecdsa  https://acme-v02.api.letsencrypt.org/directory;
+
+    # Сервер для HTTP-запросов и ACME-челленджей
+    server {
+        listen 80;
+        server_name avvtech.store www.avvtech.store;
+        # Перенаправление HTTP на HTTPS
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # Сервер для HTTPS-запросов
+    server {
+        listen 443 ssl ;
+        listen 443 quic reuseport;
+        http2 on;
+        http3 on;
+        server_name avvtech.store www.avvtech.store;
+
+        # Настройка SSL
+        ssl_session_cache   shared:SSL:10m;
+        ssl_session_timeout 1d;
+        acme 	              rsa;
+        acme	                        ecdsa;
+        ssl_certificate         $acme_cert_rsa;
+        ssl_certificate_key $acme_cert_key_rsa;
+        ssl_certificate         $acme_cert_ecdsa;
+        ssl_certificate_key $acme_cert_key_ecdsa;
+
+
+        ssl_protocols       TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:EC;
+        
+	# Проксирование запросов к API на бекенд
+        location /api/ {
+            proxy_pass http://192.168.10.22:5001;  # Адрес и порт вашего бекенда
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Проксирование всех остальных запросов на фронтенд сервер
+        location / {
+            add_header Alt-Svc 'h3=":443"; ma=86400';
+            add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+            proxy_pass http://192.168.10.23;  # Адрес сервера с фронтендом (React)
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+   }
+}
