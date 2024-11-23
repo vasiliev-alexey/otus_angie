@@ -23,19 +23,22 @@
 
     - name: Установить Angie
       ansible.builtin.apt:
-        name:
-          - angie
-        state: present
+        pkg:
+        - angie
+        - angie-console-light
+        
+
+
+    - name: Template Angie configuration for reverse proxy
+      template:
+        src: files/angie.lb.conf.j2
+        dest: /etc/angie/angie.conf
 
     - name: Start Angie Service
       service:
         name: angie
         state: started
 
-    - name: Template Angie configuration for reverse proxy
-      template:
-        src: files/angie.lb.conf.j2
-        dest: /etc/angie/angie.conf
 
     - name: Restart Angie service to apply changes
       ansible.builtin.service:

@@ -35,13 +35,43 @@ http {
     #gzip  on;
 
 
+upstream backend {
+   
+    random;	    
+    zone backend 10m;
+
+    server 192.168.10.22:5001 weight=13;
+    server 192.168.10.22:5002 weight=7;
+    server 192.168.10.22:5003 weight=3;
+
+}
+
+
+
 server {
     listen 80;
     server_name localhost;  # Ваш домен или IP-адрес
 
+
+location /console/ {
+
+    # Только локальный доступ
+
+    alias /usr/share/angie-console-light/html/;
+    # Только во FreeBSD:
+    # alias /usr/local/www/angie-console-light/html/;
+    index index.html;
+
+    location /console/api/ {
+        api /status/;
+    }
+
+}
+
+
     # Проксирование запросов к API на бекенд
     location /api/ {
-        proxy_pass http://192.168.10.22:5001;  # Адрес и порт вашего бекенда
+        proxy_pass http://backend;  # Адрес и порт вашего бекенда
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -59,3 +89,4 @@ server {
 }
     include /etc/angie/http.d/*.conf;
 }
+	
