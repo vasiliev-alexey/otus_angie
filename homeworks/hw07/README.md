@@ -243,7 +243,7 @@ upstream backend {
 ![](img/Screenshot from 2024-11-23 20-34-09.png)
 
 Но в итоге с гагрузкой справдляются    
-    ![](img/Screenshot from 2024-11-23 20-36-55.png)
+    ![](img/Screenshot%20from%202024-11-23%2020-36-55.png)
 
 Останавливаем бекенд 1 и 2
 
@@ -252,7 +252,7 @@ ubuntu@be:~$ sudo systemctl start backend_5001
 ubuntu@be:~$ sudo systemctl start backend_5002
 ```
 Нагружается только бекенд 3 и он взял нагрузку на себя (~90 RPS как заложено генератором нагрузки)
-    ![](img/Screenshot from 2024-11-23 20-38-22.png)
+    ![](img/Screenshot%20from%202024-11-23%2020-38-22.png)
 ---
 
 ![](https://icdn.lenta.ru/images/2021/10/21/11/20211021110546130/wide_16_9_da1f40493378e3e394057e8c97def081.jpeg)
