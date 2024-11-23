@@ -253,9 +253,10 @@ ubuntu@be:~$ sudo systemctl start backend_5002
 
 Нагружается только бекенд 3 и он взял нагрузку на себя (~90 RPS как заложено генератором нагрузки)
 
+
 ![](img/Screenshot from 2024-11-23 20-38-22.png)
 
 
 ---
 
-![img](https://icdn.lenta.ru/images/2021/10/21/11/20211021110546130/wide_16_9_da1f40493378e3e394057e8c97def081.jpeg)
+![](https://icdn.lenta.ru/images/2021/10/21/11/20211021110546130/wide_16_9_da1f40493378e3e394057e8c97def081.jpeg)
