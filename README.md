@@ -8,3 +8,4 @@
 * [Запуск сайта с CMS Wordpress](homeworks/hw04/README.md)
 * [Настройка HTTPS](homeworks/hw06/README.md)
 * [Балансировка HTTP](homeworks/hw07/README.md)
+* [Защита от DoS-атак](homeworks/hw08/README.md)
